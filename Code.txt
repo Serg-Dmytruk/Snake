@@ -1,0 +1,260 @@
+#include <SFML/Graphics.hpp>
+#include<vector>
+#include<ctime>
+
+using namespace sf;
+
+const int WIDTH = 600;
+const int HEIGTH = 600;
+int SpriteSize = 30;
+
+class Snake
+{
+private:
+	std::vector<Vector2f> Body;
+	Texture SnakeHead;
+	Texture SnakeBody;
+	Sprite OneSegment;
+	int key;
+public:
+	Snake()
+	{
+		this->Body.resize(3);
+		this->Body.at(0).x = SpriteSize;
+		this->Body.at(0).y = SpriteSize;
+		this->key = 0;
+	}
+
+	void setTextureHead(Texture t)
+	{
+		this->SnakeHead = t;
+		this->OneSegment.setTextureRect(IntRect(75, 10, SpriteSize, SpriteSize));
+		this->OneSegment.scale(1, 1);
+
+	}
+	void setTextureBody(Texture t)
+	{
+		this->SnakeBody = t;
+	}
+
+	void setKey(int k)
+	{
+		if (k == 0 && this->key != 1)
+		{
+			this->key = k;
+		}
+		else if (k == 1 && this->key != 0)
+		{
+			this->key = k;
+		}
+		else if (k == 2 && this->key != 3)
+		{
+			this->key = k;
+		}
+		else if (k == 3 && this->key != 2)
+		{
+			this->key = k;
+		}
+	}
+
+	void move()
+	{
+		for (int i(this->Body.size() - 1); i > 0; i--)
+		{
+			this->Body.at(i) = this->Body.at(i - 1);
+		}
+		if (this->key == 0)
+		{
+			this->Body.at(0).x += SpriteSize;
+		}
+		else if (this->key == 1)
+		{
+			this->Body.at(0).x -= SpriteSize;
+		}
+		else if (this->key == 2)
+		{
+			this->Body.at(0).y -= SpriteSize;
+		}
+		else if (this->key == 3)
+		{
+			this->Body.at(0).y += SpriteSize;
+		}
+		if (this->Body.at(0).x >= WIDTH)
+			this->Body.at(0).x = 0;
+		else if (this->Body.at(0).x < 0)
+			this->Body.at(0).x = WIDTH - SpriteSize;
+		else if (this->Body.at(0).y >= HEIGTH)
+			this->Body.at(0).y = 0;
+		else if (this->Body.at(0).y < 0)
+			this->Body.at(0).y = HEIGTH - SpriteSize;
+	}
+
+	void draw(RenderWindow& w)
+	{
+		this->OneSegment.setTexture(this->SnakeHead);
+		this->OneSegment.setPosition(this->Body.at(0));
+
+		w.draw(this->OneSegment);
+
+		this->OneSegment.setTexture(this->SnakeBody);
+
+		w.draw(this->OneSegment);
+
+		for (int i(1); i < this->Body.size(); i++)
+		{
+			this->OneSegment.setPosition(this->Body.at(i));
+			w.draw(this->OneSegment);
+		}
+	}
+
+	bool crash()
+	{
+		for (int i(4); i < this->Body.size(); i++)
+			if (this->Body.at(0).x == this->Body.at(i).x
+				&& this->Body.at(0).y == this->Body.at(i).y)
+				return 1;
+		return 0;
+	}
+
+	bool eat(Vector2f fruit)
+	{
+		if (this->Body.at(0).x == fruit.x && this->Body.at(0).y == fruit.y)
+		{
+			Vector2f new_segment(this->Body.at(this->Body.size() - 1));
+			this->Body.push_back(new_segment);
+			return 1;
+		}
+		else
+			return 0;
+	}
+
+	bool check(Vector2f fruit)
+	{
+		for (int i(0); i < this->Body.size(); i++)
+		{
+			if (this->Body.at(i).x == fruit.x && this->Body.at(i).y == fruit.y)
+				return 1;
+		}
+		return 0;
+	}
+
+	~Snake()
+	{
+
+	}
+};
+
+class Fruit
+{
+private:
+	Vector2f position;
+	Texture tFruit;
+public:
+	void spavn()
+	{
+		srand(time(NULL) + rand());
+		this->position.x = (rand() % (WIDTH / SpriteSize)) * SpriteSize;
+		this->position.y = (rand() % (HEIGTH / SpriteSize)) * SpriteSize;
+	}
+
+	void setTexture(Texture t)
+	{
+		this->tFruit = t;
+	}
+
+	void draw(RenderWindow& w)
+	{
+		Sprite fruit(this->tFruit);
+		fruit.setTextureRect(IntRect(12, 215, 30, 30));
+		fruit.scale(1, 1);
+		fruit.setPosition(this->position);
+		w.draw(fruit);
+	}
+
+	Vector2f getPosition()
+	{
+		return this->position;
+	}
+};
+
+int main() {
+
+	RenderWindow window(VideoMode(WIDTH, HEIGTH), "Snake!");
+
+	Texture texture;
+
+	Snake snake;
+
+	texture.loadFromFile("Snake.png");
+	snake.setTextureHead(texture);
+	snake.setTextureBody(texture);
+
+	Fruit fruit;
+	texture.loadFromFile("Snake.png");
+	fruit.setTexture(texture);
+
+	fruit.spavn();
+
+	bool stop(0);
+
+	Clock timer;
+	Time time;
+
+	while (window.isOpen())
+	{
+		Event event;
+		while (window.pollEvent(event))
+		{
+			if (event.type == Event::Closed || stop)
+				window.close();
+		}
+
+		if (!(time.asMilliseconds() % 10))
+		{
+			if (Keyboard::isKeyPressed(Keyboard::Right))
+			{
+				snake.setKey(0);
+			}
+			else if (Keyboard::isKeyPressed(Keyboard::Left))
+			{
+				snake.setKey(1);
+			}
+			else if (Keyboard::isKeyPressed(Keyboard::Up))
+			{
+				snake.setKey(2);
+			}
+			else if (Keyboard::isKeyPressed(Keyboard::Down))
+			{
+				snake.setKey(3);
+			}
+		}
+
+		time = timer.getElapsedTime();
+
+		if (time.asMilliseconds() > 100)
+		{
+			snake.move();
+
+			if (snake.crash())
+				stop = 1;
+
+			if (snake.eat(fruit.getPosition()))
+			{
+				do {
+					fruit.spavn();
+				} while (snake.check(fruit.getPosition()));
+				
+			}
+			timer.restart();
+		}
+
+		if (!stop)
+		{
+			window.clear();
+			fruit.draw(window);
+			snake.draw(window);
+			window.display();
+		}
+	}
+	return 0;
+}
